@@ -1,0 +1,299 @@
+import java.io.*;
+import java.util.*;
+
+public class LibraryManagementSystem {
+    static Scanner scanner = new Scanner(System.in);
+    static String[] categories = {"Computer", "Electronics", "Electrical", "Civil", "Mechanical", "Architecture"};
+    static File file = new File("books.dat");
+
+    static class Date {
+        int day, month, year;
+
+        Date(int day, int month, int year) {
+            this.day = day;
+            this.month = month;
+            this.year = year;
+        }
+    }
+
+    static class Book implements Serializable {
+        int id;
+        String name;
+        String author;
+        String category;
+        int quantity;
+        float price;
+        int rackNo;
+        String studentName;
+        Date issuedDate;
+        Date dueDate;
+
+        Book(int id, String name, String author, String category, int quantity, float price, int rackNo) {
+            this.id = id;
+            this.name = name;
+            this.author = author;
+            this.category = category;
+            this.quantity = quantity;
+            this.price = price;
+            this.rackNo = rackNo;
+        }
+
+        public String toString() {
+            return "ID: " + id + ", Name: " + name + ", Author: " + author + ", Category: " + category +
+                    ", Quantity: " + quantity + ", Price: " + price + ", Rack No: " + rackNo;
+        }
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        Password();
+    }
+
+    static void Password() throws InterruptedException, IOException {
+        String password = "codewithc";
+        System.out.println("Enter Password:");
+        String input = scanner.next();
+        if (input.equals(password)) {
+            mainMenu();
+        } else {
+            System.out.println("Wrong Password! Exiting...");
+            Thread.sleep(2000);
+        }
+    }
+
+    static void mainMenu() throws IOException, InterruptedException {
+        while (true) {
+            System.out.println("******** MAIN MENU ********");
+            System.out.println("1. Add Books");
+            System.out.println("2. Delete Books");
+            System.out.println("3. Search Books");
+            System.out.println("4. Issue Books");
+            System.out.println("5. View Books");
+            System.out.println("6. Edit Book Records");
+            System.out.println("7. Close Application");
+            System.out.print("Enter your choice: ");
+
+            int choice = scanner.nextInt();
+            switch (choice) {
+                case 1:
+                    addBooks();
+                    break;
+                case 2:
+                    deleteBooks();
+                    break;
+                case 3:
+                    searchBooks();
+                    break;
+                case 4:
+                    issueBooks();
+                    break;
+                case 5:
+                    viewBooks();
+                    break;
+                case 6:
+                    editBooks();
+                    break;
+                case 7:
+                    System.out.println("Exiting...");
+                    Thread.sleep(2000);
+                    System.exit(0);
+                default:
+                    System.out.println("Wrong entry, please try again.");
+            }
+        }
+    }
+
+    static void addBooks() throws IOException {
+        System.out.println("Choose a category:");
+        for (int i = 0; i < categories.length; i++) {
+            System.out.println((i + 1) + ". " + categories[i]);
+        }
+        int categoryChoice = scanner.nextInt();
+        if (categoryChoice < 1 || categoryChoice > categories.length) {
+            System.out.println("Invalid category");
+            return;
+        }
+
+        System.out.print("Enter Book ID: ");
+        int id = scanner.nextInt();
+        System.out.print("Enter Book Name: ");
+        scanner.nextLine(); // consume newline
+        String name = scanner.nextLine();
+        System.out.print("Enter Author: ");
+        String author = scanner.nextLine();
+        System.out.print("Enter Quantity: ");
+        int quantity = scanner.nextInt();
+        System.out.print("Enter Price: ");
+        float price = scanner.nextFloat();
+        System.out.print("Enter Rack No: ");
+        int rackNo = scanner.nextInt();
+
+        Book book = new Book(id, name, author, categories[categoryChoice - 1], quantity, price, rackNo);
+
+        saveBook(book);
+        System.out.println("Book added successfully.");
+    }
+
+    static void saveBook(Book book) throws IOException {
+        List<Book> books = loadBooks();
+        books.add(book);
+
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
+        out.writeObject(books);
+        out.close();
+    }
+
+    static List<Book> loadBooks() {
+        List<Book> books = new ArrayList<>();
+        try {
+            ObjectInputStream in = new ObjectInputStream(new FileInputStream(file));
+            books = (List<Book>) in.readObject();
+            in.close();
+        } catch (Exception e) {
+            // File doesn't exist or is empty
+        }
+        return books;
+    }
+
+    static void deleteBooks() throws IOException {
+        System.out.print("Enter Book ID to delete: ");
+        int id = scanner.nextInt();
+
+        List<Book> books = loadBooks();
+        boolean found = false;
+
+        for (Book book : books) {
+            if (book.id == id) {
+                books.remove(book);
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
+            out.writeObject(books);
+            out.close();
+            System.out.println("Book deleted successfully.");
+        } else {
+            System.out.println("Book not found.");
+        }
+    }
+
+    static void searchBooks() throws IOException {
+        System.out.println("1. Search by ID");
+        System.out.println("2. Search by Name");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        List<Book> books = loadBooks();
+        boolean found = false;
+
+        switch (choice) {
+            case 1:
+                System.out.print("Enter Book ID: ");
+                int id = scanner.nextInt();
+                for (Book book : books) {
+                    if (book.id == id) {
+                        System.out.println(book);
+                        found = true;
+                    }
+                }
+                break;
+            case 2:
+                System.out.print("Enter Book Name: ");
+                String name = scanner.nextLine();
+                for (Book book : books) {
+                    if (book.name.equalsIgnoreCase(name)) {
+                        System.out.println(book);
+                        found = true;
+                    }
+                }
+                break;
+            default:
+                System.out.println("Invalid choice.");
+        }
+
+        if (!found) {
+            System.out.println("Book not found.");
+        }
+    }
+
+    static void issueBooks() throws IOException {
+        System.out.print("Enter Book ID to issue: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        List<Book> books = loadBooks();
+        boolean found = false;
+
+        for (Book book : books) {
+            if (book.id == id) {
+                if (book.quantity > 0) {
+                    System.out.print("Enter student name: ");
+                    book.studentName = scanner.nextLine();
+                    book.quantity--;
+                    found = true;
+
+                    Calendar calendar = Calendar.getInstance();
+                    book.issuedDate = new Date(calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.YEAR));
+
+                    calendar.add(Calendar.DAY_OF_MONTH, 15); // 15 days return time
+                    book.dueDate = new Date(calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.YEAR));
+
+                    saveBook(book);
+                    System.out.println("Book issued successfully. Return date: " + book.dueDate.day + "-" + book.dueDate.month + "-" + book.dueDate.year);
+                } else {
+                    System.out.println("Book is out of stock.");
+                }
+                break;
+            }
+        }
+
+        if (!found) {
+            System.out.println("Book not found.");
+        }
+    }
+
+    static void viewBooks() {
+        List<Book> books = loadBooks();
+        System.out.println("******** Book List ********");
+        for (Book book : books) {
+            System.out.println(book);
+        }
+    }
+
+    static void editBooks() throws IOException {
+        System.out.print("Enter Book ID to edit: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        List<Book> books = loadBooks();
+        boolean found = false;
+
+        for (Book book : books) {
+            if (book.id == id) {
+                System.out.println("Current Book Details: " + book);
+                System.out.print("Enter new Book Name: ");
+                book.name = scanner.nextLine();
+                System.out.print("Enter new Author: ");
+                book.author = scanner.nextLine();
+                System.out.print("Enter new Quantity: ");
+                book.quantity = scanner.nextInt();
+                System.out.print("Enter new Price: ");
+                book.price = scanner.nextFloat();
+                System.out.print("Enter new Rack No: ");
+                book.rackNo = scanner.nextInt();
+
+                saveBook(book);
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            System.out.println("Book updated successfully.");
+        } else {
+            System.out.println("Book not found.");
+        }
+    }
+}
